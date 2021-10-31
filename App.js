@@ -18,14 +18,15 @@ import { NaverLogin, getProfile as getNaverProfile } from "@react-native-seoul/n
 
 import { login as KakaoLogin, getProfile as getKakaoProfile } from "@react-native-seoul/kakao-login";
 
+import appleAuth, {
+  AppleAuthRequestOperation,
+  AppleAuthRequestScope,
+  AppleAuthCredentialState,
+  AppleAuthError,
+} from '@invertase/react-native-apple-authentication';
+
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
-  Text,
-  useColorScheme,
-  View,
   Alert,
   PermissionsAndroid, Platform,
 } from 'react-native';
@@ -38,7 +39,7 @@ const requestLocationPermission = async () => {
       // 퍼미션 요청 다이얼로그 보이기
       const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
       if(granted== PermissionsAndroid.RESULTS.GRANTED){
-          Alert.alert('위치정보 사용을 허가하셨습니다.'); //임포트한 Alert를 사용
+//          Alert.alert('위치정보 사용을 허가하셨습니다.'); //임포트한 Alert를 사용
       }else{
           Alert.alert('위치정보 사용을 거부하셨습니다.\nGPS 인증이 제한됩니다.');
       }
@@ -47,15 +48,6 @@ const requestLocationPermission = async () => {
   }
 }
 
-const onGoogleLogin = async () => {
-  const { idToken } = await GoogleSignin.signIn();
-  const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-  const userCredential = auth().signInWithCredential(googleCredential);
-  
-  window.postMessage(
-    JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'G', is_success: true, data: userCredential })
-  );
-}
 
 const naveriosKeys = {
   kConsumerKey: "gubQnwLjz_KP_JLWm_QT",
@@ -72,45 +64,24 @@ const naverandroidKeys = {
 
 const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
 
-const onKakaoLogin = async () => {
-  const token = await KakaoLogin();
-  setResult(JSON.stringify(token));
-  const profile = await getKakaoProfile();
-  
-  window.postMessage(
-    JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'G', is_success: true, data: {token:token, profile:profile} })
-  );
-}
-
 const App: () => Node = () => {
   let webviewRef = useRef();
-  /*
+  const [naverToken, setNaverToken] = React.useState(null);
+  
   useEffect(() => {
     if (Platform.OS === 'ios') {
       Geolocation.requestAuthorization('always');
     }
   }, []);
-  */
-  const [naverToken, setNaverToken] = React.useState(null);
   
- useEffect(() => {
+  useEffect(() => {
     GoogleSignin.configure({
       webClientId:
         '812443649010-4g89se134trtf9amlhdt8crpcml9tb59.apps.googleusercontent.com'
     });
   }, []);
-  
-  const getUserProfile = async () => {
-    const profileResult = await getNaverProfile(naverToken.accessToken);
-    if (profileResult.resultcode === "024") {
-      Alert.alert("로그인 실패", profileResult.message);
-      return;
-    }
-    console.log("profileResult", profileResult);
-    window.postMessage(
-      JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'N', is_success: true, data: profileResult })
-    );
-  };
+
+  requestLocationPermission();
 
   const naverLogin = props => {
     return new Promise((resolve, reject) => {
@@ -122,12 +93,77 @@ const App: () => Node = () => {
           return;
         }
         resolve(token);
-        getUserProfile();
       });
+    }).then(function(){
+      getUserProfile();
     });
+  };
+  
+  const getUserProfile = async () => {
+    const profileResult = await getNaverProfile(naverToken.accessToken);
+    if (profileResult.resultcode === "024") {
+      Alert.alert("로그인 실패", profileResult.message);
+      return;
+    }
+    console.log("profileResult", profileResult);
+    webviewRef.postMessage(
+      JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'N', is_success: true, data: profileResult })
+    );
   };
 
   const onNaverLogin = () => naverLogin(naverinitials);
+  
+  const onGoogleLogin = async () => {
+    const { idToken } = await GoogleSignin.signIn();
+    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+    const userCredential = await auth().signInWithCredential(googleCredential);
+    
+    webviewRef.postMessage(
+      JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'G', is_success: true, data: userCredential })
+    );
+  };
+
+  const onKakaoLogin = async () => {
+    const token = await KakaoLogin();
+//    setResult(JSON.stringify(token));
+    const profile = await getKakaoProfile();
+    
+    webviewRef.postMessage(
+      JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'G', is_success: true, data: {token:token, profile:profile} })
+    );
+  };
+  const onAppleLogin = async () => {
+    try {
+      const responseObject = await appleAuth.performRequest({
+        requestedOperation: AppleAuthRequestOperation.LOGIN,
+        requestedScopes: [AppleAuthRequestScope.EMAIL],
+      });
+      console.log('responseObject:::', responseObject);
+      const credentialState = await appleAuth.getCredentialStateForUser(
+        responseObject.user,
+      );
+      if (credentialState === AppleAuthCredentialState.AUTHORIZED) {
+        console.log('user is authenticated');
+
+        webviewRef.postMessage(
+          JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'A', is_success: true, data: responseObject })
+        );
+      }
+    } catch (error) {
+      console.log(error);
+      if (error.code === AppleAuthError.CANCELED) {
+        console.log('canceled');
+        webviewRef.postMessage(
+          JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'A', is_success: false, data: '로그인이 취소되었습니다.' })
+        );
+      } else {
+        console.log('error');
+        webviewRef.postMessage(
+          JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'A', is_success: false, data: error })
+        );
+      }
+    }
+  };
 
 
   const onShouldStartLoadWithRequest = (event) => {
@@ -142,11 +178,11 @@ const App: () => Node = () => {
   const initNFC = () => {
     NfcManager.start();
     NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
-      console.warn('tag', tag);
+      console.warn('tag', tag); 
   //          NfcManager.setAlertMessageIOS('I got your tag!');
       NfcManager.unregisterTagEvent().catch(() => 0);
       
-      window.postMessage(
+      webviewRef.postMessage(
         JSON.stringify({ type: 'NFC_ACTION', dept: 'read', is_success: true, data: tag })
       );
     });
@@ -155,14 +191,15 @@ const App: () => Node = () => {
 
   const handleOnMessage = ({ nativeEvent: { data } }) => {
     console.log(data);
+    const {type, dept} = JSON.parse(data);
 
-    if(data.type == 'GPS_INFO'){
+    if(type == 'GPS_INFO'){
       Geolocation.getCurrentPosition(
         (position) => {
             console.log(position);
             const {latitude, longitude} = position.coords;
 
-            window.postMessage(
+            webviewRef.postMessage(
               JSON.stringify({ type: 'GPS_INFO', is_success: true, data: position.coords })
             );
         },
@@ -170,15 +207,14 @@ const App: () => Node = () => {
             // See error code charts below.
             console.log(error.code, error.message);
             
-            window.postMessage(
+            webviewRef.postMessage(
               JSON.stringify({ type: 'GPS_INFO', is_success: false, data: error.message })
             );
         }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
-    } else if(data.type == 'SNS_SIGN_IN'){
-      const dept = data.dept;
+    } else if(type == 'SNS_SIGN_IN'){
       if(dept === 'A') {
-//        onAppleLogin();
+        onAppleLogin();
       } else if(dept === 'G') {
         onGoogleLogin();
       } else if(dept === 'K') {
@@ -186,22 +222,22 @@ const App: () => Node = () => {
       } else if(dept === 'N') {
         onNaverLogin();
       }
-    } else if(data.type == 'NFC_ACTION'){
-      const dept = data.dept;
+    } else if(type == 'NFC_ACTION'){
       if(dept === 'read') {
         const readNFC = async() => {
           try {
             await NfcManager.registerTagEvent();
           } catch (ex) {
-            console.warn('ex', ex);
+            Alert.alert('NFC 오류 : '+ ex);
             NfcManager.unregisterTagEvent().catch(() => 0);
           }
         };
+        readNFC();
       } else if(dept === 'detech') {
         NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
         NfcManager.unregisterTagEvent().catch(() => 0);
         
-        window.postMessage(
+        webviewRef.postMessage(
           JSON.stringify({ type: 'NFC_ACTION', dept: 'detech', is_success: true })
         );
       }
@@ -221,7 +257,6 @@ const App: () => Node = () => {
           originWhitelist={['*']}
           source={{uri: sourceUrl}}
           style={{marginTop: 0}}
-          userAgent='Mozilla/5.0 (Linux; Android 11; SM-A102U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.72 Mobile Safari/537.36'
           sharedCookiesEnabled={true}
           thirdPartyCookiesEnabled={true}
           mediaPlaybackRequiresUserAction={false}
