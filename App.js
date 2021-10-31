@@ -6,9 +6,18 @@
  * @flow strict-local
  */
 
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type {Node} from 'react';
 import { WebView } from 'react-native-webview';
+import NfcManager, {NfcEvents} from 'react-native-nfc-manager';
+
+import auth from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
+import { NaverLogin, getProfile as getNaverProfile } from "@react-native-seoul/naver-login";
+
+import { login as KakaoLogin, getProfile as getKakaoProfile } from "@react-native-seoul/kakao-login";
+
 import {
   SafeAreaView,
   ScrollView,
@@ -38,7 +47,43 @@ const requestLocationPermission = async () => {
   }
 }
 
+const onGoogleLogin = async () => {
+  const { idToken } = await GoogleSignin.signIn();
+  const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+  const userCredential = auth().signInWithCredential(googleCredential);
+  
+  window.postMessage(
+    JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'G', is_success: true, data: userCredential })
+  );
+}
+
+const naveriosKeys = {
+  kConsumerKey: "gubQnwLjz_KP_JLWm_QT",
+  kConsumerSecret: "9HkLZD91YG",
+  kServiceAppName: "Greenpass",
+  kServiceAppUrlScheme: "naverLgn" // only for iOS
+};
+
+const naverandroidKeys = {
+  kConsumerKey: "gubQnwLjz_KP_JLWm_QT",
+  kConsumerSecret: "9HkLZD91YG",
+  kServiceAppName: "Greenpass"
+};
+
+const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
+
+const onKakaoLogin = async () => {
+  const token = await KakaoLogin();
+  setResult(JSON.stringify(token));
+  const profile = await getKakaoProfile();
+  
+  window.postMessage(
+    JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'G', is_success: true, data: {token:token, profile:profile} })
+  );
+}
+
 const App: () => Node = () => {
+  let webviewRef = useRef();
   /*
   useEffect(() => {
     if (Platform.OS === 'ios') {
@@ -46,6 +91,44 @@ const App: () => Node = () => {
     }
   }, []);
   */
+  const [naverToken, setNaverToken] = React.useState(null);
+  
+ useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        '812443649010-4g89se134trtf9amlhdt8crpcml9tb59.apps.googleusercontent.com'
+    });
+  }, []);
+  
+  const getUserProfile = async () => {
+    const profileResult = await getNaverProfile(naverToken.accessToken);
+    if (profileResult.resultcode === "024") {
+      Alert.alert("로그인 실패", profileResult.message);
+      return;
+    }
+    console.log("profileResult", profileResult);
+    window.postMessage(
+      JSON.stringify({ type: 'SNS_SIGN_IN', dept: 'N', is_success: true, data: profileResult })
+    );
+  };
+
+  const naverLogin = props => {
+    return new Promise((resolve, reject) => {
+      NaverLogin.login(props, (err, token) => {
+        console.log(`\n\n  Token is fetched  :: ${token} \n\n`);
+        setNaverToken(token);
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(token);
+        getUserProfile();
+      });
+    });
+  };
+
+  const onNaverLogin = () => naverLogin(naverinitials);
+
 
   const onShouldStartLoadWithRequest = (event) => {
     if (
@@ -56,45 +139,72 @@ const App: () => Node = () => {
         return true;
       }
   };
-
-  
+  const initNFC = () => {
+    NfcManager.start();
+    NfcManager.setEventListener(NfcEvents.DiscoverTag, tag => {
+      console.warn('tag', tag);
+  //          NfcManager.setAlertMessageIOS('I got your tag!');
+      NfcManager.unregisterTagEvent().catch(() => 0);
+      
+      window.postMessage(
+        JSON.stringify({ type: 'NFC_ACTION', dept: 'read', is_success: true, data: tag })
+      );
+    });
+  };
+  initNFC();
 
   const handleOnMessage = ({ nativeEvent: { data } }) => {
     console.log(data);
 
-    if(data.type == 'REQ_GPS_INFO'){
+    if(data.type == 'GPS_INFO'){
       Geolocation.getCurrentPosition(
         (position) => {
             console.log(position);
             const {latitude, longitude} = position.coords;
 
-            window.ReactNativeWebView.postMessage(
-              JSON.stringify({ type: 'RES_GPS_INFO', is_success: true, data: position.coords })
+            window.postMessage(
+              JSON.stringify({ type: 'GPS_INFO', is_success: true, data: position.coords })
             );
         },
         (error) => {
             // See error code charts below.
             console.log(error.code, error.message);
             
-            window.ReactNativeWebView.postMessage(
-              JSON.stringify({ type: 'RES_GPS_INFO', is_success: false, data: error.message })
+            window.postMessage(
+              JSON.stringify({ type: 'GPS_INFO', is_success: false, data: error.message })
             );
         }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
-    } else if(data.type == 'REQ_SIGN_IN_APPLE'){
-      onAppleLogin();
-    } else if(data.type == 'REQ_SIGN_IN_NAVER'){
-      window.ReactNativeWebView.postMessage(
-        JSON.stringify({ type: data.type, is_success: false, reason: '준비중입니다.' })
-      );
-    } else if(data.type == 'REQ_SIGN_IN_GOOGLE'){
-      window.ReactNativeWebView.postMessage(
-        JSON.stringify({ type: data.type, is_success: false, reason: '준비중입니다.' })
-      );
-    } else if(data.type == 'REQ_SIGN_IN_KAKAO'){
-      window.ReactNativeWebView.postMessage(
-        JSON.stringify({ type: data.type, is_success: false, reason: '준비중입니다.' })
-      );
+    } else if(data.type == 'SNS_SIGN_IN'){
+      const dept = data.dept;
+      if(dept === 'A') {
+//        onAppleLogin();
+      } else if(dept === 'G') {
+        onGoogleLogin();
+      } else if(dept === 'K') {
+        onKakaoLogin();
+      } else if(dept === 'N') {
+        onNaverLogin();
+      }
+    } else if(data.type == 'NFC_ACTION'){
+      const dept = data.dept;
+      if(dept === 'read') {
+        const readNFC = async() => {
+          try {
+            await NfcManager.registerTagEvent();
+          } catch (ex) {
+            console.warn('ex', ex);
+            NfcManager.unregisterTagEvent().catch(() => 0);
+          }
+        };
+      } else if(dept === 'detech') {
+        NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+        NfcManager.unregisterTagEvent().catch(() => 0);
+        
+        window.postMessage(
+          JSON.stringify({ type: 'NFC_ACTION', dept: 'detech', is_success: true })
+        );
+      }
     }
   };
 
@@ -107,6 +217,7 @@ const App: () => Node = () => {
   };
 
   return (<WebView
+          ref={webviewRef}
           originWhitelist={['*']}
           source={{uri: sourceUrl}}
           style={{marginTop: 0}}

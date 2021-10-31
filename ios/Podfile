@@ -14,6 +14,16 @@ target 'greenpassapp' do
 
   pod 'react-native-webview', :path => '../node_modules/react-native-webview'
 
+  pod 'react-native-nfc-manager', :path => '../node_modules/react-native-nfc-manager'
+
+  pod 'kakao-login', :path => '../node_modules/@react-native-seoul/kakao-login'
+
+  pod 'RNFBAuth', :path => '../node_modules/@react-native-firebase/auth'
+
+  pod 'RNGoogleSignin', :path => '../node_modules/@react-native-google-signin/google-signin'
+
+  pod 'RNNaverLogin', :path => '../node_modules/@react-native-seoul/naver-login'
+
   target 'greenpassappTests' do
     inherit! :complete
     # Pods for testing
