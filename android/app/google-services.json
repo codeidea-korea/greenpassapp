@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "812443649010",
+    "firebase_url": "https://do-dream.firebaseio.com",
+    "project_id": "do-dream",
+    "storage_bucket": "do-dream.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:812443649010:android:d510d9caab5a63f023616b",
+        "android_client_info": {
+          "package_name": "com.greenpassapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "812443649010-2qg6a8a82asvhsg3l2kkbd6bh4h35vjc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.greenpassapp",
+            "certificate_hash": "066304701da979ddb14ff6d3f773731658963ccc"
+          }
+        },
+        {
+          "client_id": "812443649010-ma8k8um963cdeo8l6il4tlhvaaej6lms.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.greenpassapp",
+            "certificate_hash": "a8825ff14e263e4b3a04e06c52e0a1378e022c2b"
+          }
+        },
+        {
+          "client_id": "812443649010-4g89se134trtf9amlhdt8crpcml9tb59.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9X4cJXizq4rVKLSzkHQWzdQeOUAzOA3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "812443649010-4g89se134trtf9amlhdt8crpcml9tb59.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
