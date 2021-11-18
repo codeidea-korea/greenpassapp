@@ -32,59 +32,15 @@ import { v4 as uuid } from 'uuid'
 import {
   StyleSheet,
   Alert,
-  PermissionsAndroid, Platform,
+  PermissionsAndroid, Platform, SafeAreaView,
 } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 
-const requestLocationPermission = async () => {
-  try{
-      // 퍼미션 요청 다이얼로그 보이기
-      const granted=await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
-      if(granted== PermissionsAndroid.RESULTS.GRANTED){
-//          Alert.alert('위치정보 사용을 허가하셨습니다.'); //임포트한 Alert를 사용
-      }else{
-          Alert.alert('위치정보 사용을 거부하셨습니다.\nGPS 인증이 제한됩니다.');
-      }
-  }catch(err){
-    Alert.alert('퍼미션 작업 에러');
-  }
-}
-
-const sourceUrl = 'http://greenpass.codeidea.io/';
-    
-const onShouldStartLoadWithRequest = (event) => {
-    if (
-        event.url.startsWith('http://') ||
-        event.url.startsWith('https://') ||
-        event.url.startsWith('about:blank')
-    ) {
-        return true;
-    }
-};
-
-const naveriosKeys = {
-  kConsumerKey: "gubQnwLjz_KP_JLWm_QT",
-  kConsumerSecret: "9HkLZD91YG",
-  kServiceAppName: "Greenpass",
-  kServiceAppUrlScheme: "naverLgn" // only for iOS
-};
-
-const naverandroidKeys = {
-  kConsumerKey: "gubQnwLjz_KP_JLWm_QT",
-  kConsumerSecret: "9HkLZD91YG",
-  kServiceAppName: "Greenpass"
-};
-
-const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
-
-const sendMessage = ({ webViewRef, payload }) => {
-  if (webViewRef.current) {
-    webViewRef?.current?.postMessage(JSON.stringify(payload));
-  }
-};
 
 
 const App :() => Node = () => {
+
+
   const webviewRef = useRef();
   const [naverToken, setNaverToken] = useState(null);
   
@@ -92,16 +48,56 @@ const App :() => Node = () => {
     if (Platform.OS === 'ios') {
       Geolocation.requestAuthorization('always');
     }
+    if(Platform.OS !== 'ios'){
+       requestLocationPermission();
+    }
   }, []);
   
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId:
-        '694092036995-bf3nlqrron9b9iqc7n4pi9om7ihtr012.apps.googleusercontent.com'
-    });
-  }, []);
 
-  requestLocationPermission();
+
+const requestLocationPermission = async () => {
+  try {
+    // 퍼미션 요청 다이얼로그 보이기
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+    );
+    if (granted == PermissionsAndroid.RESULTS.GRANTED) {
+      //          Alert.alert('위치정보 사용을 허가하셨습니다.'); //임포트한 Alert를 사용
+    } else {
+      Alert.alert("위치정보 사용을 거부하셨습니다.\nGPS 인증이 제한됩니다.");
+    }
+  } catch (err) {
+    Alert.alert("퍼미션 작업 에러");
+  }
+};
+
+const sourceUrl = "http://greenpass.codeidea.io/";
+
+const onShouldStartLoadWithRequest = (event) => {
+  if (
+    event.url.startsWith("http://") ||
+    event.url.startsWith("https://") ||
+    event.url.startsWith("about:blank")
+  ) {
+    return true;
+  }
+};
+
+const naveriosKeys = {
+  kConsumerKey: "gubQnwLjz_KP_JLWm_QT",
+  kConsumerSecret: "9HkLZD91YG",
+  kServiceAppName: "Greenpass",
+  kServiceAppUrlScheme: "naverLgn", // only for iOS
+};
+
+const naverandroidKeys = {
+  kConsumerKey: "gubQnwLjz_KP_JLWm_QT",
+  kConsumerSecret: "9HkLZD91YG",
+  kServiceAppName: "Greenpass",
+};
+
+const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
+
 
   const naverLogin = (webviewRef, props) => {
     return new Promise((resolve, reject) => {
@@ -142,6 +138,16 @@ const App :() => Node = () => {
 
   const onNaverLogin = async (webviewRef) => { await naverLogin(webviewRef, naverinitials); };
   
+
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId:
+        "694092036995-bf3nlqrron9b9iqc7n4pi9om7ihtr012.apps.googleusercontent.com",
+    });
+  }, []);
+
+
   const onGoogleLogin = async (webviewRef) => {
     try{
       const gresponse = await GoogleSignin.signIn();
@@ -250,12 +256,25 @@ const App :() => Node = () => {
       });
     }
   };
+  
+
+  const sendMessage = ({ webViewRef, payload }) => {
+    if (webViewRef.current) {
+      webViewRef?.current?.postMessage(JSON.stringify(payload));
+    }
+  };
+
+  
+  useEffect(()=>{
+    initNFC();
+
+  },[])
 
 
   const initNFC = async () => {
     await NfcManager.start();
   };
-  initNFC();
+
 
   const handleOnMessage = (webviewRef, { nativeEvent: { data } }) => {
     console.log(data);
@@ -349,22 +368,26 @@ const App :() => Node = () => {
     
   };
 
-  return (<WebView
-      ref={webviewRef}
-      originWhitelist={['*']}
-      source={{uri: sourceUrl}}
-      style={{marginTop: 0}}
-      sharedCookiesEnabled={true}
-      thirdPartyCookiesEnabled={true}
-      mediaPlaybackRequiresUserAction={false}
-      useWebKit={true}
-      userAgent='Mozilla/5.0 (Linux; Android 11; SM-A102U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.72 Mobile Safari/537.36'
-      androidHardwareAccelerationDisabled 
-      onShouldStartLoadWithRequest={event => {
-        return onShouldStartLoadWithRequest(event);
-      }}
-      onMessage={(evt) => handleOnMessage(webviewRef, evt)}
-  />);
+  return (
+    <SafeAreaView style={{flex:1, backgroundColor:"white"}}>
+      <WebView
+        ref={webviewRef}
+        originWhitelist={["*"]}
+        source={{ uri: sourceUrl }}
+        style={{ flex:1,marginTop: 0, backgroundColor:"white" }}
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        mediaPlaybackRequiresUserAction={false}
+        useWebKit={true}
+        userAgent="Mozilla/5.0 (Linux; Android 11; SM-A102U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.72 Mobile Safari/537.36"
+        androidHardwareAccelerationDisabled
+        onShouldStartLoadWithRequest={(event) => {
+          return onShouldStartLoadWithRequest(event);
+        }}
+        onMessage={(evt) => handleOnMessage(webviewRef, evt)}
+      />
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
