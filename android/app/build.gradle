@@ -136,8 +136,8 @@ android {
         applicationId "com.greenpassapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.2"
     }
     splits {
         abi {
@@ -149,10 +149,10 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+            storeFile file('greenpass.jks')
+            storePassword 'codeidea_20211103'
+            keyAlias 'codeidea_greenpass'
+            keyPassword 'codeidea_20211103'
         }
     }
     buildTypes {
@@ -201,7 +201,7 @@ dependencies {
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules
     implementation 'com.google.firebase:firebase-auth'
-    implementation project(':react-native-seoul-naver-login')
+
 
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
 

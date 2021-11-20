@@ -14,7 +14,7 @@ import NfcManager, {NfcEvents} from 'react-native-nfc-manager';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
-import { NaverLogin, getProfile as getNaverProfile } from "@react-native-seoul/naver-login";
+//import { NaverLogin, getProfile as getNaverProfile } from "@react-native-seoul/naver-login";
 
 import { login as KakaoLogin, getProfile as getKakaoProfile } from "@react-native-seoul/kakao-login";
 
@@ -32,7 +32,7 @@ import { v4 as uuid } from 'uuid'
 import {
   StyleSheet,
   Alert,
-  PermissionsAndroid, Platform, SafeAreaView,
+  PermissionsAndroid, Platform, SafeAreaView, Button, 
 } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 
@@ -51,6 +51,44 @@ const App :() => Node = () => {
     if(Platform.OS !== 'ios'){
        requestLocationPermission();
     }
+
+           
+    async function getIsNFCSupport() {
+      try {
+        await NfcManager.start();
+        await NfcManager.isSupported();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function getIsNFCEnabled() {
+      try {
+        const isNFCEnabled = await NfcManager.isEnabled();
+        return isNFCEnabled;
+      } catch (e) {
+        return false;
+      }
+    }
+  const initnfc = async()=>{
+const isNFCSupport = await getIsNFCSupport();
+
+if (isNFCSupport == false) {
+  alert("NFC 를 지원하지 않는 단말기 입니다");
+  return false;
+}
+
+const isNFCEnabled = await getIsNFCEnabled();
+if (isNFCEnabled == false) {
+  alert("NFC 기능이 꺼져 있습니다.");
+  return false;
+}
+
+ }
+
+ initnfc();
+    
   }, []);
   
 
@@ -99,46 +137,46 @@ const naverandroidKeys = {
 const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
 
 
-  const naverLogin = (webviewRef, props) => {
-    return new Promise((resolve, reject) => {
-      NaverLogin.login(props, (err, token) => {
-//        Alert.alert(JSON.stringify(token));
-
-        setNaverToken(token);
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(token);
-        getUserProfile(webviewRef);
-      });
-    });
-  };
-  
-  const getUserProfile = async (webviewRef) => {
-    try{
-      const profileResult = await getNaverProfile(naverToken.accessToken);
-
-      if (profileResult.resultcode === "024") {
-        Alert.alert("로그인 실패", profileResult.message);
-        return;
-      }
-//      Alert.alert(JSON.stringify(profileResult));
-      sendMessage({
-        webviewRef, payload: { type: 'SNS_SIGN_IN', dept: 'N', is_success: true, data: profileResult }
-      });
-    }catch(err) {
-      Alert.alert(JSON.stringify(err));
-
-      sendMessage({
-        webviewRef, payload: { type: 'SNS_SIGN_IN', dept: 'N', is_success: false, data: err }
-      });
-    }
-  };
-
-  const onNaverLogin = async (webviewRef) => { await naverLogin(webviewRef, naverinitials); };
-  
-
+// const naverLogin = (webviewRef, props) => {
+//   return new Promise((resolve, reject) => {
+//     NaverLogin.login(props, (err, token) => {
+///        Alert.alert(JSON.stringify(token));
+//
+//       setNaverToken(token);
+//       if (err) {
+//         reject(err);
+//         return;
+//       }
+//       resolve(token);
+//       getUserProfile(webviewRef);
+//     });
+//   });
+// };
+// 
+//  const getUserProfile = async (webviewRef) => {
+//    try{
+//      const profileResult = await getNaverProfile(naverToken.accessToken);
+//
+//      if (profileResult.resultcode === "024") {
+//        Alert.alert("로그인 실패", profileResult.message);
+//        return;
+//      }
+////      Alert.alert(JSON.stringify(profileResult));
+//      sendMessage({
+//        webviewRef, payload: { type: 'SNS_SIGN_IN', dept: 'N', is_success: true, data: profileResult }
+//      });
+//    }catch(err) {
+//      Alert.alert(JSON.stringify(err));
+//
+//      sendMessage({
+//        webviewRef, payload: { type: 'SNS_SIGN_IN', dept: 'N', is_success: false, data: err }
+//      });
+//    }
+//  };
+//
+//  const onNaverLogin = async (webviewRef) => { await naverLogin(webviewRef, naverinitials); };
+//  
+//
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -264,6 +302,11 @@ const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
     }
   };
 
+  const platformMessage = () => {
+    sendMessage({
+      webviewRef, payload: { type: 'Platform', is_success: true, data: Platform.OS }
+    });
+  }
   
   useEffect(()=>{
     initNFC();
@@ -310,45 +353,36 @@ const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
         onNaverLogin(webviewRef);
       }
     } else if(type == 'NFC_ACTION'){
-      if(dept === 'read') {
-        const readNFC = async(webviewRef) => {
-          let tagFound = null;
 
+      if(dept === 'read') {
+        const readNFC = async() => {
           const cleanUp = () => {
             NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
             NfcManager.setEventListener(NfcEvents.SessionClosed, null);
           };
 
-          try {
-            NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag) => {
-              tagFound = tag;
-              resolve(tagFound);
-              NfcManager.setAlertMessageIOS('NDEF tag found');
-              NfcManager.unregisterTagEvent().catch(() => 0);
-              
-              sendMessage({
-                webviewRef, payload: { type: 'NFC_ACTION', dept: 'read', is_success: true, data: tagFound }
-              });
-            });
+              return new Promise((resolve) => {
+                let tagFound = null;
 
-            NfcManager.setEventListener(NfcEvents.SessionClosed, () => {
-              cleanUp();
-              if (!tagFound) {
-                resolve();
-              
-                sendMessage({
-                  webviewRef, payload: { type: 'NFC_ACTION', dept: 'read', is_success: true, data: tagFound }
+                NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag) => {
+                  tagFound = tag;
+                  resolve(tagFound);
+                  NfcManager.unregisterTagEvent().catch(() => 0);
                 });
-              }
-            });
 
-            NfcManager.registerTagEvent();
-          } catch (ex) {
-            Alert.alert('NFC 오류 : '+ ex);
-            NfcManager.unregisterTagEvent().catch(() => 0);
-          }
+                NfcManager.setEventListener(NfcEvents.SessionClosed, () => {
+                  cleanUp();
+                  if (!tagFound) {
+                    resolve();
+                  }
+                });
+
+                NfcManager.registerTagEvent();
+              });
         };
-        readNFC(webviewRef);
+        readNFC().then((res) =>
+          webviewRef.postMessage(JSON.stringify(res.ndefMessage))
+        );
       } else if(dept === 'detech') {
         NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
         NfcManager.unregisterTagEvent().catch(() => 0);
@@ -368,19 +402,27 @@ const naverinitials = Platform.OS === "ios" ? naveriosKeys : naverandroidKeys;
     
   };
 
+  
+
   return (
-    <SafeAreaView style={{flex:1, backgroundColor:"white"}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
       <WebView
         ref={webviewRef}
         originWhitelist={["*"]}
         source={{ uri: sourceUrl }}
-        style={{ flex:1,marginTop: 0, backgroundColor:"white" }}
+        style={{
+          flex: 1,
+          marginTop: 0,
+          backgroundColor: "white",
+          opacity: 0.99,
+          minHeight: 1,
+        }}
+        onLoad={platformMessage}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         mediaPlaybackRequiresUserAction={false}
-        useWebKit={true}
         userAgent="Mozilla/5.0 (Linux; Android 11; SM-A102U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.72 Mobile Safari/537.36"
-        androidHardwareAccelerationDisabled
+        androidHardwareAccelerationDisabled={true}
         onShouldStartLoadWithRequest={(event) => {
           return onShouldStartLoadWithRequest(event);
         }}
