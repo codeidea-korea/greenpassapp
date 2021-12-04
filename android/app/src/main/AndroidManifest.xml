@@ -25,6 +25,36 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+                <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+
+            <!-- Redirect URI: "kakao{NATIVE_APP_KEY}://oauth“ -->
+            <data android:scheme="greenpass" />
+        </intent-filter>
+        <intent-filter> <!-- 추가할 intent-filter -->
+	<action android:name="android.nfc.action.NDEF_DISCOVERED"/>
+	<category android:name="android.intent.category.DEFAULT"/>	
+	<data android:mimeType="text/plain" />
+    <action android:name="android.nfc.action.TECH_DISCOVERED"/>
+  </intent-filter>
+        <!-- 추가할 meta-data -->
+  <meta-data android:name="android.nfc.action.TECH_DISCOVERED"
+             android:resource="@xml/nfc_tech_filter" />
+
+      </activity>
+
+      <activity android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity">
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+
+            <!-- Redirect URI: "kakao{NATIVE_APP_KEY}://oauth“ -->
+            <data android:host="oauth"
+                android:scheme="kakaoea780f6f8b3f8ae725e98085e7ab3392" />
+        </intent-filter>
       </activity>
 
     </application>

@@ -42,6 +42,8 @@
 		3A79EC675D2650CA80D9D70D /* Pods-greenpassapp-greenpassappTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-greenpassapp-greenpassappTests.release.xcconfig"; path = "Target Support Files/Pods-greenpassapp-greenpassappTests/Pods-greenpassapp-greenpassappTests.release.xcconfig"; sourceTree = "<group>"; };
 		5C3E5863274168E400D4B767 /* greenpassapp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "greenpassapp-Bridging-Header.h"; sourceTree = "<group>"; };
 		5C3E5864274168E500D4B767 /* File.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = File.swift; sourceTree = "<group>"; };
+		5CF59C9A274AAFB40009B801 /* greenpassapp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = greenpassapp.entitlements; path = greenpassapp/greenpassapp.entitlements; sourceTree = "<group>"; };
+		5CF59C9B274AAFCA0009B801 /* greenpassappRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = greenpassappRelease.entitlements; path = greenpassapp/greenpassappRelease.entitlements; sourceTree = "<group>"; };
 		5CF746AA274295A8005F822E /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "greenpassapp/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		612C7AEFE1C4E891E5C58B48 /* libPods-greenpassapp-greenpassappTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-greenpassapp-greenpassappTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = greenpassapp/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -91,6 +93,8 @@
 		13B07FAE1A68108700A75B9A /* greenpassapp */ = {
 			isa = PBXGroup;
 			children = (
+				5CF59C9B274AAFCA0009B801 /* greenpassappRelease.entitlements */,
+				5CF59C9A274AAFB40009B801 /* greenpassapp.entitlements */,
 				5CF746AA274295A8005F822E /* GoogleService-Info.plist */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.m */,
@@ -509,7 +513,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CODE_SIGN_ENTITLEMENTS = greenpassapp/greenpassapp.entitlements;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 2K87BS3GC6;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = greenpassapp/Info.plist;
@@ -517,7 +522,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.5;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -538,14 +543,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CODE_SIGN_ENTITLEMENTS = greenpassapp/greenpassappRelease.entitlements;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 2K87BS3GC6;
 				INFOPLIST_FILE = greenpassapp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.5;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
